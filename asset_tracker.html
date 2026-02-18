@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asset Tracker — Modeling Team</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0a0d14;
+    --surface:   #111827;
+    --surface2:  #1a2235;
+    --border:    #1f3050;
+    --accent:    #00d4ff;
+    --accent2:   #7c3aed;
+    --text:      #e2e8f0;
+    --muted:     #64748b;
+    --done:      #10b981;
+    --progress:  #f59e0b;
+    --paused:    #ef4444;
+    --pending:   #6b7280;
+    --cancelled: #374151;
+    --high:      #ef4444;
+    --medium:    #f59e0b;
+    --low:       #10b981;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .brand { display: flex; flex-direction: column; gap: 2px; }
+
+  .brand-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .brand-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .header-stats {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .stat-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 16px;
+    text-align: center;
+    min-width: 70px;
+  }
+
+  .stat-pill .num {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 22px;
+    font-weight: bold;
+    display: block;
+  }
+
+  .stat-pill .lbl {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .stat-pill.s-done   .num { color: var(--done); }
+  .stat-pill.s-prog   .num { color: var(--progress); }
+  .stat-pill.s-paus   .num { color: var(--paused); }
+  .stat-pill.s-pend   .num { color: var(--muted); }
+
+  /* CONTROLS */
+  .controls {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 14px;
+    pointer-events: none;
+  }
+
+  input[type="text"], select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+
+  .search-wrap input { padding-left: 36px; }
+
+  input:focus, select:focus { border-color: var(--accent); }
+
+  select {
+    cursor: pointer;
+    min-width: 160px;
+    flex-shrink: 0;
+    width: auto;
+  }
+
+  select option { background: var(--surface2); }
+
+  .btn-add {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s, transform 0.1s;
+    flex-shrink: 0;
+  }
+
+  .btn-add:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-add:active { transform: translateY(0); }
+
+  /* VIEW TOGGLE */
+  .view-toggle {
+    display: flex;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .view-btn {
+    padding: 10px 14px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+
+  .view-btn.active {
+    background: var(--border);
+    color: var(--accent);
+  }
+
+  .view-btn:hover:not(.active) { color: var(--text); }
+
+  /* GRID */
+  #asset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+
+  /* LIST VIEW */
+  #asset-grid.list-view {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  #asset-grid.list-view .card {
+    flex-direction: row;
+    align-items: center;
+    border-radius: 8px;
+    min-height: 64px;
+  }
+
+  #asset-grid.list-view .card:hover { transform: none; }
+
+  #asset-grid.list-view .card-img {
+    width: 80px;
+    height: 64px;
+    flex-shrink: 0;
+    border-radius: 0;
+  }
+
+  #asset-grid.list-view .card-body {
+    flex-direction: row;
+    align-items: center;
+    padding: 10px 14px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  #asset-grid.list-view .card-top {
+    flex: 1;
+    min-width: 180px;
+    gap: 4px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  #asset-grid.list-view .card-meta { flex-shrink: 0; }
+
+  #asset-grid.list-view .card-notes { display: none; }
+
+  #asset-grid.list-view .card-actions {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+    flex-shrink: 0;
+    gap: 6px;
+  }
+
+  #asset-grid.list-view .btn-sm { flex: none; padding: 6px 12px; }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    animation: fadeIn 0.3s ease both;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+    box-shadow: 0 8px 30px rgba(0,212,255,0.1);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Card image */
+  .card-img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 12px;
+    font-family: 'Share Tech Mono', monospace;
+    letter-spacing: 1px;
+    flex-shrink: 0;
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+  }
+
+  .card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .card-img .img-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0.5;
+  }
+
+  .card-img .img-placeholder svg { width: 32px; height: 32px; }
+
+  .card-img .img-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+    font-size: 12px;
+    color: #fff;
+    gap: 6px;
+  }
+
+  .card-img:hover .img-overlay { opacity: 1; }
+
+  /* Card body */
+  .card-body {
+    padding: 14px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+  }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .card-id {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+
+  .card-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.3;
+    flex: 1;
+  }
+
+  .badge {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+    font-weight: bold;
+    flex-shrink: 0;
+  }
+
+  .badge-delivered  { background: rgba(16,185,129,0.15); color: var(--done);     border: 1px solid rgba(16,185,129,0.3); }
+  .badge-progress   { background: rgba(245,158,11,0.15);  color: var(--progress); border: 1px solid rgba(245,158,11,0.3); }
+  .badge-paused     { background: rgba(239,68,68,0.15);   color: var(--paused);   border: 1px solid rgba(239,68,68,0.3); }
+  .badge-pending    { background: rgba(107,114,128,0.15); color: #9ca3af;         border: 1px solid rgba(107,114,128,0.3); }
+  .badge-cancelled  { background: rgba(55,65,81,0.3);     color: #6b7280;         border: 1px solid rgba(55,65,81,0.5); }
+
+  .card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--surface2);
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+
+  .prio { font-weight: 700; }
+  .prio-High   { color: var(--high); }
+  .prio-Medium { color: var(--medium); }
+  .prio-Low    { color: var(--low); }
+
+  .card-notes {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+    border-left: 2px solid var(--border);
+    padding-left: 10px;
+  }
+
+  .card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+
+  .btn-sm {
+    flex: 1;
+    padding: 7px;
+    border-radius: 6px;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+  }
+
+  .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-sm.danger:hover { border-color: var(--paused); color: var(--paused); }
+
+  /* EMPTY */
+  .empty {
+    grid-column: 1/-1;
+    text-align: center;
+    padding: 60px;
+    color: var(--muted);
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  /* MODAL */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeInBg 0.2s ease;
+  }
+
+  @keyframes fadeInBg { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp 0.25s ease;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .modal-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .btn-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: color 0.15s;
+  }
+
+  .btn-close:hover { color: var(--text); }
+
+  .modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+
+  label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 13px;
+    outline: none;
+    resize: vertical;
+    min-height: 70px;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+
+  textarea:focus { border-color: var(--accent); }
+
+  .img-preview-wrap {
+    width: 100%;
+    height: 160px;
+    background: var(--surface2);
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    position: relative;
+  }
+
+  .img-preview-wrap:hover { border-color: var(--accent); }
+
+  .img-preview-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 6px;
+  }
+
+  .img-hint {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+    padding: 10px;
+  }
+
+  .modal-footer {
+    display: flex;
+    gap: 10px;
+    padding: 16px 24px 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .btn-cancel {
+    flex: 1;
+    padding: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-cancel:hover { border-color: var(--text); color: var(--text); }
+
+  .btn-save {
+    flex: 2;
+    padding: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    color: #fff;
+    border-radius: 8px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .btn-save:hover { opacity: 0.9; }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+  .no-results { color: var(--muted); font-family: 'Share Tech Mono', monospace; font-size: 13px; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  /* PASTE ZONE */
+  .paste-hint {
+    position: absolute;
+    bottom: 6px;
+    right: 8px;
+    font-size: 10px;
+    background: rgba(0,0,0,0.6);
+    color: var(--accent);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: 'Share Tech Mono', monospace;
+    pointer-events: none;
+    letter-spacing: 0.5px;
+  }
+
+  .img-preview-wrap.paste-active {
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.05);
+  }
+
+</style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <div class="brand">
+      <div class="brand-title">🎮 Asset Tracker</div>
+      <div class="brand-sub">MODELING TEAM · Luis Restrepo · v1.0</div>
+    </div>
+    <div class="header-stats" id="stats"></div>
+  </header>
+
+  <div class="controls">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search" placeholder="Buscar asset por nombre...">
+    </div>
+    <select id="filter-status">
+      <option value="">Todos los estados</option>
+      <option>In Progress</option>
+      <option>Pending</option>
+      <option>Paused</option>
+      <option>Delivered</option>
+      <option>Cancelled</option>
+    </select>
+    <select id="filter-zone">
+      <option value="">Todas las zonas</option>
+    </select>
+    <div class="view-toggle">
+      <button class="view-btn active" id="btn-grid" onclick="setView('grid')" title="Vista tarjetas">⊞</button>
+      <button class="view-btn" id="btn-list" onclick="setView('list')" title="Vista lista">☰</button>
+    </div>
+    <button class="btn-add" onclick="openModal()">+ Agregar Asset</button>
+  </div>
+
+  <div id="asset-grid"></div>
+
+</div>
+
+<!-- MODAL ADD/EDIT -->
+<div class="modal-backdrop" id="modal" style="display:none" onclick="handleBackdropClick(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Nuevo Asset</div>
+      <button class="btn-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nombre del Asset *</label>
+        <input type="text" id="f-name" placeholder="Ej: Square Structures Lab 1">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Zona / Sección *</label>
+          <select id="f-zone">
+            <option value="">— Selecciona zona —</option>
+            <option>Environmental Artist</option>
+            <option>Armor Development</option>
+            <option>Weapons Development</option>
+            <option>Drakes Quest for the Forgotten</option>
+            <option>Corrupted Techari Dragon</option>
+            <option>Other Game Monsters</option>
+            <option>Other Assets</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" id="f-requester" placeholder="Ej: Rozo">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Estado</label>
+          <select id="f-status">
+            <option>Pending</option>
+            <option>In Progress</option>
+            <option>Paused</option>
+            <option>Delivered</option>
+            <option>Cancelled</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Prioridad</label>
+          <select id="f-priority">
+            <option>High</option>
+            <option>Medium</option>
+            <option>Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Asignado a</label>
+        <input type="text" id="f-assigned" placeholder="Ej: 3D Team">
+      </div>
+      <div class="form-group">
+        <label>Imagen de referencia</label>
+        <div class="img-preview-wrap" id="img-drop-zone" onclick="document.getElementById('f-img-file').click()">
+          <div class="img-hint" id="img-hint">
+            <span style="font-size:28px">🖼️</span>
+            <span>Click para subir · Ctrl+V para pegar</span>
+          </div>
+          <img id="img-preview" style="display:none">
+          <span class="paste-hint">Ctrl+V</span>
+        </div>
+        <input type="file" id="f-img-file" accept="image/*" style="display:none" onchange="handleImgFile(event)">
+        <input type="text" id="f-img-url" placeholder="O pega aquí el link de Discord / URL de imagen" oninput="handleImgUrl(this.value)">
+      </div>
+      <div class="form-group">
+        <label>Notas / Fuente</label>
+        <textarea id="f-notes" placeholder="Contexto, de dónde se pidió, referencias, etc."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveAsset()">Guardar Asset</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL MOVER ZONA -->
+<div class="modal-backdrop" id="move-modal" style="display:none" onclick="handleMoveBackdrop(event)">
+  <div class="modal" style="max-width:380px" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">📦 Mover a otra zona</div>
+      <button class="btn-close" onclick="closeMoveModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="move-asset-info" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:4px;">
+        <div style="font-size:10px;color:var(--accent);font-family:'Share Tech Mono',monospace;margin-bottom:4px;" id="move-asset-id"></div>
+        <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;" id="move-asset-name"></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Zona actual: <span id="move-current-zone" style="color:var(--text)"></span></div>
+      </div>
+      <div class="form-group">
+        <label>Mover a zona</label>
+        <select id="move-zone-select"></select>
+      </div>
+      <div class="form-group">
+        <label>O escribe una zona nueva</label>
+        <input type="text" id="move-zone-new" placeholder="Nombre de zona nueva...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeMoveModal()">Cancelar</button>
+      <button class="btn-save" onclick="confirmMove()">Mover Asset</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ────────────────────────────────────────────────────────────────────
+let assets = [
+  { id:"MOD-001", name:"Square Structures (Lab Section 1)", zone:"Environmental Artist", requester:"Hizombi", status:"In Progress", priority:"High", assigned:"3D Team", img:"", notes:"No estaba en el PDF original. Pedido verbalmente el 16/02." },
+  { id:"MOD-002", name:"Light Wells", zone:"Environmental Artist", requester:"Hizombi", status:"In Progress", priority:"High", assigned:"3D Team", img:"", notes:"No estaba en el PDF. Confirmado por Luis el 16/02." },
+  { id:"MOD-003", name:"Alien Bonsai (tronco iluminado)", zone:"Environmental Artist", requester:"Hizombi", status:"Pending", priority:"Medium", assigned:"3D Team", img:"", notes:"Pedido hace mucho tiempo. Todavía no recibido." },
+  { id:"MOD-004", name:"Lab Technology Special Models", zone:"Environmental Artist", requester:"Hizombi", status:"Pending", priority:"High", assigned:"3D Team", img:"", notes:"Hizombi confirmó que no los ha recibido aún." },
+  { id:"MOD-005", name:"6th Rare Lab Zone — Scientist Room", zone:"Environmental Artist", requester:"Rozo", status:"Pending", priority:"Medium", assigned:"TBD", img:"", notes:"Aparece 1 de cada 10 veces. Distinta a las 5 zonas estándar." },
+  { id:"MOD-006", name:"Store / Tent Redesign (4-point)", zone:"Other Assets", requester:"Rozo", status:"In Progress", priority:"Medium", assigned:"3D Team", img:"", notes:"Versión más pequeña, 4 puntos en lugar de 6. Mismo material que otras carpas." },
+  { id:"MOD-007", name:"Store / Tent — Rope Fix (1st shop)", zone:"Other Assets", requester:"Hizombi", status:"Pending", priority:"Low", assigned:"3D Team", img:"", notes:"Las cuerdas deben arreglarse en la primera tienda." },
+  { id:"MOD-008", name:"Forge — Larger, Outdoor (no tent)", zone:"Other Assets", requester:"Rozo", status:"Pending", priority:"Medium", assigned:"3D Team", img:"", notes:"Solo una forja. El doble de tamaño. NO debe estar bajo una carpa." },
+  { id:"MOD-009", name:"(Por definir)", zone:"Environmental Artist", requester:"", status:"Pending", priority:"Medium", assigned:"3D Team", img:"", notes:"Zona agregada desde canal de Discord: environmental-artist." },
+  { id:"MOD-010", name:"(Por definir)", zone:"Armor Development", requester:"", status:"Pending", priority:"Medium", assigned:"3D Team", img:"", notes:"Zona agregada desde canal de Discord: armor-development." },
+  { id:"MOD-011", name:"(Por definir)", zone:"Weapons Development", requester:"", status:"Pending", priority:"Medium", assigned:"3D Team", img:"", notes:"Zona agregada desde canal de Discord: weapons-development." },
+  { id:"MOD-012", name:"(Por definir)", zone:"Drakes Quest for the Forgotten", requester:"", status:"Pending", priority:"Medium", assigned:"3D Team", img:"", notes:"Zona agregada desde canal de Discord: drakes-quest-for-the-forgotten." },
+  { id:"MOD-013", name:"(Por definir)", zone:"Corrupted Techari Dragon", requester:"", status:"Pending", priority:"Medium", assigned:"3D Team", img:"", notes:"Zona agregada desde canal de Discord: corrupted-techari-dragon." },
+  { id:"MOD-014", name:"(Por definir)", zone:"Other Game Monsters", requester:"", status:"Pending", priority:"Medium", assigned:"3D Team", img:"", notes:"Zona agregada desde canal de Discord: other-game-monsters." },
+  { id:"MOD-015", name:"(Por definir)", zone:"Other Assets", requester:"", status:"Pending", priority:"Low", assigned:"3D Team", img:"", notes:"Zona general para assets sin categoría definida." },
+];
+
+let editId = null;
+let currentImg = "";
+let currentView = "grid";
+
+function setView(v) {
+  currentView = v;
+  const grid = document.getElementById("asset-grid");
+  grid.classList.toggle("list-view", v === "list");
+  document.getElementById("btn-grid").classList.toggle("active", v === "grid");
+  document.getElementById("btn-list").classList.toggle("active", v === "list");
+  render();
+}
+
+// ── UTILS ───────────────────────────────────────────────────────────────────
+function genId() {
+  const nums = assets.map(a => parseInt(a.id.replace("MOD-","")) || 0);
+  const next = (nums.length ? Math.max(...nums) : 0) + 1;
+  return "MOD-" + String(next).padStart(3,"0");
+}
+
+function statusClass(s) {
+  return { "Delivered":"delivered","In Progress":"progress","Paused":"paused","Pending":"pending","Cancelled":"cancelled" }[s] || "pending";
+}
+
+function statusLabel(s) {
+  return { "Delivered":"✓ Entregado","In Progress":"⚙ En Progreso","Paused":"⏸ Pausado","Pending":"○ Pendiente","Cancelled":"✕ Cancelado" }[s] || s;
+}
+
+
+
+// ── PASTE IMAGE ──────────────────────────────────────────────────────────────
+document.addEventListener("paste", function(e) {
+  const modal = document.getElementById("modal");
+  if (modal.style.display === "none") return;
+  const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+  for (const item of items) {
+    if (item.type.startsWith("image/")) {
+      const blob = item.getAsFile();
+      const reader = new FileReader();
+      reader.onload = ev => {
+        currentImg = ev.target.result;
+        document.getElementById("f-img-url").value = "";
+        setImgPreview(currentImg);
+        // Flash effect
+        const zone = document.getElementById("img-drop-zone");
+        zone.classList.add("paste-active");
+        setTimeout(() => zone.classList.remove("paste-active"), 600);
+      };
+      reader.readAsDataURL(blob);
+      break;
+    }
+  }
+});
+
+// ── MOVE MODAL ──────────────────────────────────────────────────────────────
+let moveId = null;
+
+function openMoveModal(id) {
+  moveId = id;
+  const a = assets.find(x => x.id === id);
+  if (!a) return;
+
+  document.getElementById("move-asset-id").textContent   = a.id;
+  document.getElementById("move-asset-name").textContent = a.name;
+  document.getElementById("move-current-zone").textContent = a.zone;
+  document.getElementById("move-zone-new").value = "";
+
+  const zones = [...new Set(assets.map(x => x.zone))].sort().filter(z => z !== a.zone);
+  const sel = document.getElementById("move-zone-select");
+  sel.innerHTML = '<option value="">— Selecciona zona existente —</option>' +
+    zones.map(z => `<option>${z}</option>`).join("");
+
+  document.getElementById("move-modal").style.display = "flex";
+}
+
+function closeMoveModal() {
+  document.getElementById("move-modal").style.display = "none";
+  moveId = null;
+}
+
+function handleMoveBackdrop(e) {
+  if (e.target === document.getElementById("move-modal")) closeMoveModal();
+}
+
+function confirmMove() {
+  const selZone = document.getElementById("move-zone-select").value;
+  const newZone = document.getElementById("move-zone-new").value.trim();
+  const target  = newZone || selZone;
+
+  if (!target) { alert("Selecciona una zona o escribe una nueva."); return; }
+
+  const idx = assets.findIndex(a => a.id === moveId);
+  if (idx !== -1) assets[idx].zone = target;
+
+  closeMoveModal();
+  render();
+  saveToCloud();
+}
+
+// ── RENDER ──────────────────────────────────────────────────────────────────
+function render() {
+  const search = document.getElementById("search").value.toLowerCase();
+  const fStatus = document.getElementById("filter-status").value;
+  const fZone   = document.getElementById("filter-zone").value;
+
+  const filtered = assets.filter(a => {
+    const matchSearch = a.name.toLowerCase().includes(search) || a.zone.toLowerCase().includes(search);
+    const matchStatus = !fStatus || a.status === fStatus;
+    const matchZone   = !fZone   || a.zone === fZone;
+    return matchSearch && matchStatus && matchZone;
+  });
+
+  const grid = document.getElementById("asset-grid");
+  grid.innerHTML = "";
+
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="empty no-results">// No se encontraron assets con esos filtros</div>';
+  } else {
+    filtered.forEach((a, i) => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.style.animationDelay = (i * 0.04) + "s";
+
+      const imgHtml = a.img
+        ? `<img src="${a.img}" alt="${a.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+           <div class="img-placeholder" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg><span>Sin imagen</span></div>`
+        : `<div class="img-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg><span>Sin imagen de referencia</span></div>`;
+
+      card.innerHTML = `
+        <div class="card-img" onclick="openModal('${a.id}')">
+          ${imgHtml}
+          <div class="img-overlay">✏️ Editar</div>
+        </div>
+        <div class="card-body">
+          <div class="card-top">
+            <div>
+              <div class="card-id">${a.id}</div>
+              <div class="card-name">${a.name}</div>
+            </div>
+            <span class="badge badge-${statusClass(a.status)}">${statusLabel(a.status)}</span>
+          </div>
+          <div class="card-meta">
+            <span class="meta-item">📁 ${a.zone}</span>
+            <span class="meta-item prio prio-${a.priority}">▲ ${a.priority}</span>
+            ${a.requester ? `<span class="meta-item">👤 ${a.requester}</span>` : ""}
+            ${a.assigned  ? `<span class="meta-item">🔧 ${a.assigned}</span>`  : ""}
+          </div>
+          ${a.notes ? `<div class="card-notes">${a.notes}</div>` : ""}
+          <div class="card-actions">
+            <button class="btn-sm" onclick="openModal('${a.id}')">✏️ Editar</button>
+            <button class="btn-sm" onclick="openMoveModal('${a.id}')">📦 Mover</button>
+            <button class="btn-sm danger" onclick="deleteAsset('${a.id}')">🗑 Eliminar</button>
+          </div>
+        </div>`;
+      grid.appendChild(card);
+    });
+  }
+
+  updateStats();
+  updateZoneFilter();
+}
+
+function updateStats() {
+  const counts = { Delivered:0, "In Progress":0, Paused:0, Pending:0 };
+  assets.forEach(a => { if (counts[a.status] !== undefined) counts[a.status]++; });
+  document.getElementById("stats").innerHTML = `
+    <div class="stat-pill s-done"><span class="num">${counts.Delivered}</span><span class="lbl">Entregado</span></div>
+    <div class="stat-pill s-prog"><span class="num">${counts["In Progress"]}</span><span class="lbl">En Progreso</span></div>
+    <div class="stat-pill s-paus"><span class="num">${counts.Paused}</span><span class="lbl">Pausado</span></div>
+    <div class="stat-pill s-pend"><span class="num">${counts.Pending}</span><span class="lbl">Pendiente</span></div>
+  `;
+}
+
+function updateZoneFilter() {
+  const sel = document.getElementById("filter-zone");
+  const cur = sel.value;
+  const zones = [...new Set(assets.map(a => a.zone))].sort();
+  sel.innerHTML = '<option value="">Todas las zonas</option>' + zones.map(z => `<option ${z===cur?"selected":""}>${z}</option>`).join("");
+}
+
+// ── MODAL ───────────────────────────────────────────────────────────────────
+function openModal(id) {
+  editId = id || null;
+  currentImg = "";
+  const modal = document.getElementById("modal");
+  document.getElementById("modal-title").textContent = id ? "Editar Asset" : "Nuevo Asset";
+
+  if (id) {
+    const a = assets.find(x => x.id === id);
+    if (!a) return;
+    document.getElementById("f-name").value      = a.name;
+    document.getElementById("f-zone").value      = a.zone;
+    document.getElementById("f-requester").value = a.requester;
+    document.getElementById("f-status").value    = a.status;
+    document.getElementById("f-priority").value  = a.priority;
+    document.getElementById("f-assigned").value  = a.assigned;
+    document.getElementById("f-notes").value     = a.notes;
+    document.getElementById("f-img-url").value   = a.img;
+    currentImg = a.img;
+    setImgPreview(a.img);
+  } else {
+    ["f-name","f-zone","f-requester","f-assigned","f-notes","f-img-url"].forEach(id => document.getElementById(id).value = "");
+    document.getElementById("f-status").value   = "Pending";
+    document.getElementById("f-priority").value = "Medium";
+    setImgPreview("");
+  }
+
+  modal.style.display = "flex";
+}
+
+function closeModal() {
+  document.getElementById("modal").style.display = "none";
+  editId = null;
+}
+
+function handleBackdropClick(e) {
+  if (e.target === document.getElementById("modal")) closeModal();
+}
+
+function setImgPreview(src) {
+  const hint    = document.getElementById("img-hint");
+  const preview = document.getElementById("img-preview");
+  if (src) {
+    preview.src = src;
+    preview.style.display = "block";
+    hint.style.display    = "none";
+  } else {
+    preview.style.display = "none";
+    hint.style.display    = "flex";
+  }
+}
+
+function handleImgFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    currentImg = ev.target.result;
+    document.getElementById("f-img-url").value = "";
+    setImgPreview(currentImg);
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleImgUrl(val) {
+  currentImg = val;
+  setImgPreview(val);
+}
+
+function saveAsset() {
+  const name = document.getElementById("f-name").value.trim();
+  const zone = document.getElementById("f-zone").value;
+  if (!name || !zone) { alert("El nombre y la zona son obligatorios."); return; }
+
+  const imgVal = document.getElementById("f-img-url").value.trim();
+  const finalImg = currentImg || imgVal;
+
+  const data = {
+    name,
+    zone,
+    requester: document.getElementById("f-requester").value.trim(),
+    status:    document.getElementById("f-status").value,
+    priority:  document.getElementById("f-priority").value,
+    assigned:  document.getElementById("f-assigned").value.trim(),
+    notes:     document.getElementById("f-notes").value.trim(),
+    img:       finalImg,
+  };
+
+  if (editId) {
+    const idx = assets.findIndex(a => a.id === editId);
+    if (idx !== -1) assets[idx] = { ...assets[idx], ...data };
+  } else {
+    assets.unshift({ id: genId(), ...data });
+  }
+
+  closeModal();
+  render();
+  saveToCloud();
+}
+
+function deleteAsset(id) {
+  if (!confirm("¿Eliminar este asset del tracker?")) return;
+  assets = assets.filter(a => a.id !== id);
+  render();
+  saveToCloud();
+}
+
+// ── FIREBASE CONFIG ──────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyBpRI8uOUtdhNiypQBjD0vacVQq3craCbw",
+  authDomain: "asset-tracker-10551.firebaseapp.com",
+  projectId: "asset-tracker-10551",
+  storageBucket: "asset-tracker-10551.firebasestorage.app",
+  messagingSenderId: "163377330376",
+  appId: "1:163377330376:web:410b9ba248112ef8d7cdfd",
+  measurementId: "G-B1HFTY5TRV"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const COLLECTION = "assets";
+
+async function loadFromCloud() {
+  showToast("⏳ Cargando datos...", "info");
+  try {
+    const snapshot = await db.collection(COLLECTION).orderBy("order").get();
+    if (!snapshot.empty) {
+      // Firebase tiene datos — SIEMPRE usar esos, nunca sobreescribir
+      let loaded = snapshot.docs.map(doc => ({ ...doc.data(), _docId: doc.id }));
+      // Solo fix silencioso de nombre viejo
+      let needsFix = false;
+      loaded = loaded.map(a => {
+        if (a.zone === "Surface / Market") { needsFix = true; return { ...a, zone: "Other Assets" }; }
+        return a;
+      });
+      assets = loaded;
+      if (needsFix) {
+        showToast("🔄 Actualizando zonas...", "info");
+        await saveToCloud();
+      } else {
+        showToast("✅ Datos cargados", "done");
+      }
+    } else {
+      // Firebase vacío — primera vez, cargar defaults
+      showToast("☁️ Primera vez, guardando datos iniciales...", "info");
+      await saveToCloud();
+      showToast("✅ Listo", "done");
+    }
+  } catch(e) {
+    console.error(e);
+    // Error de conexión — mostrar datos locales SIN guardar nada
+    showToast("⚠️ Sin conexión, mostrando datos locales", "error");
+  }
+  render();
+}
+
+async function saveToCloud() {
+  try {
+    // Delete all then re-insert
+    const snapshot = await db.collection(COLLECTION).get();
+    const batch = db.batch();
+    snapshot.docs.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+
+    const batch2 = db.batch();
+    assets.forEach((a, i) => {
+      const ref = db.collection(COLLECTION).doc(a.id);
+      batch2.set(ref, { ...a, order: i });
+    });
+    await batch2.commit();
+    showToast("☁️ Guardado en la nube", "done");
+  } catch(e) {
+    console.error(e);
+    showToast("⚠️ Error al guardar", "error");
+  }
+}
+
+// ── TOAST ────────────────────────────────────────────────────────────────────
+function showToast(msg, type) {
+  let toast = document.getElementById("toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "toast";
+    toast.style.cssText = "position:fixed;bottom:24px;right:24px;z-index:999;padding:10px 18px;border-radius:8px;font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:1px;transition:opacity 0.3s;pointer-events:none;";
+    document.body.appendChild(toast);
+  }
+  const colors = { done:"#10b981", info:"#00d4ff", error:"#ef4444" };
+  toast.style.background = "#111827";
+  toast.style.border = `1px solid ${colors[type]||"#00d4ff"}`;
+  toast.style.color = colors[type]||"#00d4ff";
+  toast.style.opacity = "1";
+  toast.textContent = msg;
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { toast.style.opacity = "0"; }, 2500);
+}
+
+// ── EVENTS ──────────────────────────────────────────────────────────────────
+document.getElementById("search").addEventListener("input", render);
+document.getElementById("filter-status").addEventListener("change", render);
+document.getElementById("filter-zone").addEventListener("change", render);
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+loadFromCloud();
+</script>
+</body>
+</html>
