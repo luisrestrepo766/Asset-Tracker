@@ -1163,24 +1163,46 @@ async function loadFromCloud() {
   render();
 }
 
+function compressImg(base64, maxWidth=400) {
+  return new Promise(resolve => {
+    if (!base64 || !base64.startsWith("data:image")) { resolve(base64); return; }
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxWidth / img.width);
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/jpeg", 0.5));
+    };
+    img.onerror = () => resolve("");
+    img.src = base64;
+  });
+}
+
 async function saveToCloud() {
   try {
-    // Delete all then re-insert
+    // Compress images before saving
+    const compressed = await Promise.all(assets.map(async (a, i) => {
+      const img = await compressImg(a.img);
+      return { ...a, img, order: i };
+    }));
+
     const snapshot = await db.collection(COLLECTION).get();
     const batch = db.batch();
     snapshot.docs.forEach(doc => batch.delete(doc.ref));
     await batch.commit();
 
     const batch2 = db.batch();
-    assets.forEach((a, i) => {
+    compressed.forEach((a) => {
       const ref = db.collection(COLLECTION).doc(a.id);
-      batch2.set(ref, { ...a, order: i });
+      batch2.set(ref, a);
     });
     await batch2.commit();
     showToast("☁️ Guardado en la nube", "done");
   } catch(e) {
     console.error(e);
-    showToast("⚠️ Error al guardar", "error");
+    showToast("⚠️ Error al guardar — imagen muy pesada, usa un link de Discord", "error");
   }
 }
 
